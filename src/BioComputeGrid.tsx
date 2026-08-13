@@ -422,6 +422,54 @@ const ParticleField = ({ count = 800, radius = 15 }) => {
   );
 };
 
+// Camera animation controller — must live inside <Canvas> for useFrame to work
+const CameraController = ({
+  cameraState,
+  setCameraState,
+  cameraTargetRef,
+  scrollProgressRef,
+}) => {
+  useFrame((state, delta) => {
+    const { camera } = state;
+    const target = cameraTargetRef.current;
+
+    if (cameraState === 'zooming-in') {
+      // Dolly in to helix core
+      target.z = THREE.MathUtils.lerp(target.z, 4, delta * 3);
+      target.fov = THREE.MathUtils.lerp(target.fov, 30, delta * 3);
+      if (Math.abs(target.z - 4) < 0.1) {
+        setCameraState('settled');
+      }
+    } else if (cameraState === 'settled') {
+      // Pull back to reveal full scene
+      target.z = THREE.MathUtils.lerp(target.z, 25, delta * 2);
+      target.fov = THREE.MathUtils.lerp(target.fov, 50, delta * 2);
+      if (Math.abs(target.z - 25) < 0.1) {
+        setCameraState('idle');
+      }
+    } else {
+      // Idle parallax based on scroll
+      const scrollY = window.scrollY;
+      const maxScroll = document.body.scrollHeight - window.innerHeight;
+      scrollProgressRef.current = THREE.MathUtils.lerp(
+        scrollProgressRef.current,
+        scrollY / maxScroll,
+        delta * 5
+      );
+      const progress = scrollProgressRef.current;
+      target.x = Math.sin(progress * Math.PI * 2) * 2;
+      target.y = Math.cos(progress * Math.PI) * 1;
+    }
+
+    // Apply camera target
+    camera.position.lerp(new THREE.Vector3(target.x, target.y, target.z), delta * 5);
+    camera.fov = THREE.MathUtils.lerp(camera.fov, target.fov, delta * 5);
+    camera.updateProjectionMatrix();
+  });
+
+  return null;
+};
+
 // Main 3D Scene
 const CanvasScene = ({
   cameraTarget,
@@ -973,45 +1021,6 @@ const BioComputeGrid = () => {
     setTimeout(() => scrollToSection('about'), 500);
   }, [scrollToSection]);
 
-  // Camera animation logic
-  useFrame((state, delta) => {
-    const { camera } = state;
-    const target = cameraTargetRef.current;
-
-    if (cameraState === 'zooming-in') {
-      // Dolly in to helix core
-      target.z = THREE.MathUtils.lerp(target.z, 4, delta * 3);
-      target.fov = THREE.MathUtils.lerp(target.fov, 30, delta * 3);
-      if (Math.abs(target.z - 4) < 0.1) {
-        setCameraState('settled');
-      }
-    } else if (cameraState === 'settled') {
-      // Pull back to reveal full scene
-      target.z = THREE.MathUtils.lerp(target.z, 25, delta * 2);
-      target.fov = THREE.MathUtils.lerp(target.fov, 50, delta * 2);
-      if (Math.abs(target.z - 25) < 0.1) {
-        setCameraState('idle');
-      }
-    } else {
-      // Idle parallax based on scroll
-      const scrollY = window.scrollY;
-      const maxScroll = document.body.scrollHeight - window.innerHeight;
-      scrollProgressRef.current = THREE.MathUtils.lerp(
-        scrollProgressRef.current,
-        scrollY / maxScroll,
-        delta * 5
-      );
-      const progress = scrollProgressRef.current;
-      target.x = Math.sin(progress * Math.PI * 2) * 2;
-      target.y = Math.cos(progress * Math.PI) * 1;
-    }
-
-    // Apply camera target
-    camera.position.lerp(new THREE.Vector3(target.x, target.y, target.z), delta * 5);
-    camera.fov = THREE.MathUtils.lerp(camera.fov, target.fov, delta * 5);
-    camera.updateProjectionMatrix();
-  });
-
   // Mouse move handler for particle repel
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -1034,6 +1043,12 @@ const BioComputeGrid = () => {
           shadows
           shadowMapType={THREE.PCFSoftShadowMap}
         >
+          <CameraController
+            cameraState={cameraState}
+            setCameraState={setCameraState}
+            cameraTargetRef={cameraTargetRef}
+            scrollProgressRef={scrollProgressRef}
+          />
           <Suspense fallback={null}>
             <CanvasScene
               isMobile={isMobile}
