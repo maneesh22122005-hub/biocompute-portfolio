@@ -1,0 +1,352 @@
+
+# 2026-08-13 11:27:09.627207
++n
+
+# 2026-08-13 11:28:46.639198
++Create a new file called BioComputeGrid.jsx with the following spec: # Bio-Compute Grid — Interactive 3D Portfolio Prompt
++
++Act as an expert Creative Technologist and Senior React / Three.js Developer.
++Generate a COMPLETE, fully functional, interactive 3D portfolio website in a single React component file (using `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing`, `three`, `framer-motion`, `lucide-react`, and `Tailwind CSS`).
++Do NOT leave placeholders, `// TODO` comments, or incomplete sections. Write the entire working code — every geometry, shader, and animation loop fully implemented.
++
++---
++
++## Visual Concept & Theme: "Bio-Compute Grid"
++
++- **Aesthetic**: High-tech dark mode merging High-Performance Computing (HPC) nodes with biological structures (DNA/Bioinformatics).
++- **Color Palette**: Dark Slate/Obsidian background (`#0b0f19`), Electric Cyan (`#00f2fe`), Bio-Green/Emerald (`#10b981`), Cool Metallic accents (`#94a3b8`).
++- **Post-processing stack** (via `@react-three/postprocessing`): `Bloom` (intensity tuned to make the cyan/emerald emissive materials glow), `ChromaticAberration` (subtle, offset-based on camera velocity), `Vignette`, and `Noise` (very low opacity, film-grain feel).
++
++---
++
++## Interactive 3D Scene Features
++
++### 1. Central 3D Model — Animated Double Helix in a Server Ring
++
++- Procedurally generated DNA double helix: two intertwined strands built from instanced spheres or tubes (`<Tube>` / `TubeGeometry` along a sine/cosine parametric curve), with connecting "base pair" rungs as thin cylinders, color-alternating cyan/emerald.
++- The helix continuously rotates on its own axis (`useFrame`) independent of user interaction, with a secondary subtle vertical bob (sine wave on `position.y`).
++- Surrounding "server rack ring": a torus or ring of instanced boxes (`InstancedMesh`) styled as blade-server units, each with emissive edges (`meshStandardMaterial` with `emissive` + `emissiveIntensity` driven by a per-instance offset sine wave, simulating asynchronous "blinking LED" activity).
++- Use custom GLSL shaders (`shaderMaterial` via drei's `shaderMaterial` helper) for at least one surface — e.g., a Fresnel/rim-glow shader on the helix strands, or a scanline/data-flow shader (UV-animated scrolling gradient) on the ring — so the glow isn't just emissive color but an actual custom fragment shader effect.
++
++### 2. Camera & Interaction Choreography
++
++- `OrbitControls` with `enableZoom={false}`, `enablePan={false}`, damped rotation (`enableDamping`, `dampingFactor`), and rotation clamped to a believable range (`minPolarAngle` / `maxPolarAngle`) so the model can't be flipped upside down.
++- Mouse-driven parallax: on top of OrbitControls' drag rotation, the whole scene group subtly offsets/rotates toward normalized mouse position when NOT actively dragging, using `useFrame` + `lerp` for smoothing (three's `MathUtils.lerp`), so it feels alive even without interaction.
++- "Explore Compute Grid" CTA button triggers a scripted camera dolly-zoom: animate `camera.position` and `camera.fov` via `useFrame` + `gsap`-free `framer-motion`-driven state (or a simple lerp-to-target pattern) that pushes the camera in close to the helix core, then pulls back to reveal the full scene as the page auto-scrolls to the About section. Implement this as a real state machine (`idle` → `zooming-in` → `settled`), not a CSS transition.
++- Scroll-linked camera movement: as the user scrolls past Skills/Projects sections, use `useScroll` (drei) or a scroll-progress hook to subtly rotate/reposition the 3D group so it feels tethered to page content, not just a static hero background.
++
++### 3. Floating Particle Field — Cluster Compute Nodes
++
++- Custom `InstancedMesh` or `Points`-based particle system (hundreds of instances) representing compute nodes / molecular data points, distributed in a spherical volume around the central model.
++- Each particle has: individual drift velocity (simple noise-based movement, e.g., a per-particle seed feeding `Math.sin`/`Math.cos` offsets in `useFrame`), slow color interpolation between cyan and emerald (`Color.lerpColors`), and subtle size pulsing.
++- Mouse-repel interaction: particles within a radius of the projected mouse/raycast position gently push away and drift back (spring-like return, e.g. lerp toward home position when not disturbed) — this should use actual raycasting against an invisible plane, not just 2D CSS.
++
++### 4. Dynamic Lighting
++
++- `ambientLight` (low intensity, cool tone), one `directionalLight` acting as key light, and a `pointLight` whose position is updated every frame to track the raycasted cursor position in 3D space, with color cycling subtly between cyan and emerald based on time.
++- Optional: a rim/back `pointLight` fixed behind the helix for silhouette definition.
++
++### 5. Performance & Robustness
++
++- Wrap the Canvas content in `<Suspense fallback={null}>`.
++- Use `dpr={[1, 2]}` and `performance={{ min: 0.5 }}` on the `<Canvas>` for adaptive quality.
++- All `useFrame` callbacks must avoid allocating new objects/vectors per frame (reuse refs/`Vector3` instances) to keep this performant.
++
++---
++
++## User Interface & Content Sections
++
++### 1. Header / Navigation
++
++- Floating glassmorphism navbar (`backdrop-blur`, semi-transparent slate, subtle border-glow) with smooth-scroll links ("About", "Skills", "Projects", "Contact"), active-section highlighting driven by scroll position (`IntersectionObserver`).
++- Interactive theme badge / status indicator: an animated pulsing dot (framer-motion `animate` loop) labeled "System Online" or similar, reinforcing the HPC theme.
++
++### 2. Hero Section
++
++- **Name**: Maneesh B
++- **Headline**: "Machine Learning & High-Performance Computing (HPC) | Computational Biology"
++- **Location**: Kasaragod, Kerala, India | SSSIHL
++- **Interactive Elements**:
++  - "Explore Compute Grid" CTA button that triggers the camera dolly-zoom described above and scrolls to About.
++  - Direct link to GitHub (`https://github.com/maneesh22122005-hub/biopulse-hud-agar-analytics`), styled as an icon-button with hover glow (`lucide-react` GitHub icon).
++- Hero text uses `framer-motion` staggered entrance animation (fade + slide) on mount.
++
++### 3. Interactive Skills Grid (3D Glass Cards)
++
++Hover-responsive glass cards (CSS 3D tilt via `framer-motion`'s `useMotionValue` + `useTransform` tracking mouse position over each card, not just a flat `scale` hover) featuring:
++
++- **Computational Biology & Bioinformatics** — sequence processing, structural analysis, statistical modeling (Python, R)
++- **High-Performance Computing (HPC)** — SLURM workload manager, Linux shell, cluster scheduling & scaling
++- **Machine Learning & AI** — model training, distributed data preprocessing, predictive analytics
++
++Each card has an animated gradient border on hover and a subtle "scan line" sweep effect (CSS keyframe or framer-motion animate).
++
++### 4. Featured Project Highlight
++
++- Interactive project showcase card for **BioPulse HUD & Agar Analytics**.
++- Dynamic tech tags (Python, R, SLURM, Bio-Analytics) as pill badges.
++- Direct GitHub repo link button.
++- Interactive preview box: an animated mock "terminal/HUD" panel (fake scrolling log lines or a simple canvas-based waveform/graph placeholder built from actual SVG/CSS, not an image) that idles with subtle motion to suggest a live dashboard.
++
++### 5. Footer & Contact CTA
++
++- Interactive contact banner: "Open to research collaborations and discussions around ML Infrastructure, HPC, and Scalable AI."
++- One-click copy-email button using the Clipboard API, with a visual confirmation state (icon swap to checkmark + toast/tooltip via `framer-motion`, auto-reverting after ~2s).
++
++---
++
++## Code Requirements
++
++- Return full React code starting with standard imports (`import React, { useRef, useState, useMemo, useEffect } from 'react'`, plus all R3F/drei/postprocessing/framer-motion/lucide-react imports).
++- All custom shaders must be complete, valid GLSL strings embedded via drei's `shaderMaterial`, registered with `extend()`.
++- All Three.js geometries/materials must use real, valid `@react-three/fiber` JSX primitives (`<sphereGeometry>`, `<meshStandardMaterial>`, `<instancedMesh>`, etc.) — no invented components.
++- Wrap the whole app in a responsive, mobile-aware layout using Tailwind CSS (verify the 3D canvas gracefully degrades or resizes on small viewports — cap particle/instance counts on narrow screens).
++- Single file, fully self-contained, ready to drop into a Vite/CRA React project with the listed dependencies installed.
+
+# 2026-08-13 11:28:54.404035
++n
+
+# 2026-08-13 11:30:46.212625
++d
+
+# 2026-08-13 11:31:41.902503
++Create a new file called BioComputeGrid.jsx with the following spec: # Bio-Compute Grid — Interactive 3D Portfolio Prompt
++
++Act as an expert Creative Technologist and Senior React / Three.js Developer.
++Generate a COMPLETE, fully functional, interactive 3D portfolio website in a single React component file (using `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing`, `three`, `framer-motion`, `lucide-react`, and `Tailwind CSS`).
++Do NOT leave placeholders, `// TODO` comments, or incomplete sections. Write the entire working code — every geometry, shader, and animation loop fully implemented.
++
++---
++
++## Visual Concept & Theme: "Bio-Compute Grid"
++
++- **Aesthetic**: High-tech dark mode merging High-Performance Computing (HPC) nodes with biological structures (DNA/Bioinformatics).
++- **Color Palette**: Dark Slate/Obsidian background (`#0b0f19`), Electric Cyan (`#00f2fe`), Bio-Green/Emerald (`#10b981`), Cool Metallic accents (`#94a3b8`).
++- **Post-processing stack** (via `@react-three/postprocessing`): `Bloom` (intensity tuned to make the cyan/emerald emissive materials glow), `ChromaticAberration` (subtle, offset-based on camera velocity), `Vignette`, and `Noise` (very low opacity, film-grain feel).
++
++---
++
++## Interactive 3D Scene Features
++
++### 1. Central 3D Model — Animated Double Helix in a Server Ring
++
++- Procedurally generated DNA double helix: two intertwined strands built from instanced spheres or tubes (`<Tube>` / `TubeGeometry` along a sine/cosine parametric curve), with connecting "base pair" rungs as thin cylinders, color-alternating cyan/emerald.
++- The helix continuously rotates on its own axis (`useFrame`) independent of user interaction, with a secondary subtle vertical bob (sine wave on `position.y`).
++- Surrounding "server rack ring": a torus or ring of instanced boxes (`InstancedMesh`) styled as blade-server units, each with emissive edges (`meshStandardMaterial` with `emissive` + `emissiveIntensity` driven by a per-instance offset sine wave, simulating asynchronous "blinking LED" activity).
++- Use custom GLSL shaders (`shaderMaterial` via drei's `shaderMaterial` helper) for at least one surface — e.g., a Fresnel/rim-glow shader on the helix strands, or a scanline/data-flow shader (UV-animated scrolling gradient) on the ring — so the glow isn't just emissive color but an actual custom fragment shader effect.
++
++### 2. Camera & Interaction Choreography
++
++- `OrbitControls` with `enableZoom={false}`, `enablePan={false}`, damped rotation (`enableDamping`, `dampingFactor`), and rotation clamped to a believable range (`minPolarAngle` / `maxPolarAngle`) so the model can't be flipped upside down.
++- Mouse-driven parallax: on top of OrbitControls' drag rotation, the whole scene group subtly offsets/rotates toward normalized mouse position when NOT actively dragging, using `useFrame` + `lerp` for smoothing (three's `MathUtils.lerp`), so it feels alive even without interaction.
++- "Explore Compute Grid" CTA button triggers a scripted camera dolly-zoom: animate `camera.position` and `camera.fov` via `useFrame` + `gsap`-free `framer-motion`-driven state (or a simple lerp-to-target pattern) that pushes the camera in close to the helix core, then pulls back to reveal the full scene as the page auto-scrolls to the About section. Implement this as a real state machine (`idle` → `zooming-in` → `settled`), not a CSS transition.
++- Scroll-linked camera movement: as the user scrolls past Skills/Projects sections, use `useScroll` (drei) or a scroll-progress hook to subtly rotate/reposition the 3D group so it feels tethered to page content, not just a static hero background.
++
++### 3. Floating Particle Field — Cluster Compute Nodes
++
++- Custom `InstancedMesh` or `Points`-based particle system (hundreds of instances) representing compute nodes / molecular data points, distributed in a spherical volume around the central model.
++- Each particle has: individual drift velocity (simple noise-based movement, e.g., a per-particle seed feeding `Math.sin`/`Math.cos` offsets in `useFrame`), slow color interpolation between cyan and emerald (`Color.lerpColors`), and subtle size pulsing.
++- Mouse-repel interaction: particles within a radius of the projected mouse/raycast position gently push away and drift back (spring-like return, e.g. lerp toward home position when not disturbed) — this should use actual raycasting against an invisible plane, not just 2D CSS.
++
++### 4. Dynamic Lighting
++
++- `ambientLight` (low intensity, cool tone), one `directionalLight` acting as key light, and a `pointLight` whose position is updated every frame to track the raycasted cursor position in 3D space, with color cycling subtly between cyan and emerald based on time.
++- Optional: a rim/back `pointLight` fixed behind the helix for silhouette definition.
++
++### 5. Performance & Robustness
++
++- Wrap the Canvas content in `<Suspense fallback={null}>`.
++- Use `dpr={[1, 2]}` and `performance={{ min: 0.5 }}` on the `<Canvas>` for adaptive quality.
++- All `useFrame` callbacks must avoid allocating new objects/vectors per frame (reuse refs/`Vector3` instances) to keep this performant.
++
++---
++
++## User Interface & Content Sections
++
++### 1. Header / Navigation
++
++- Floating glassmorphism navbar (`backdrop-blur`, semi-transparent slate, subtle border-glow) with smooth-scroll links ("About", "Skills", "Projects", "Contact"), active-section highlighting driven by scroll position (`IntersectionObserver`).
++- Interactive theme badge / status indicator: an animated pulsing dot (framer-motion `animate` loop) labeled "System Online" or similar, reinforcing the HPC theme.
++
++### 2. Hero Section
++
++- **Name**: Maneesh B
++- **Headline**: "Machine Learning & High-Performance Computing (HPC) | Computational Biology"
++- **Location**: Kasaragod, Kerala, India | SSSIHL
++- **Interactive Elements**:
++  - "Explore Compute Grid" CTA button that triggers the camera dolly-zoom described above and scrolls to About.
++  - Direct link to GitHub (`https://github.com/maneesh22122005-hub/biopulse-hud-agar-analytics`), styled as an icon-button with hover glow (`lucide-react` GitHub icon).
++- Hero text uses `framer-motion` staggered entrance animation (fade + slide) on mount.
++
++### 3. Interactive Skills Grid (3D Glass Cards)
++
++Hover-responsive glass cards (CSS 3D tilt via `framer-motion`'s `useMotionValue` + `useTransform` tracking mouse position over each card, not just a flat `scale` hover) featuring:
++
++- **Computational Biology & Bioinformatics** — sequence processing, structural analysis, statistical modeling (Python, R)
++- **High-Performance Computing (HPC)** — SLURM workload manager, Linux shell, cluster scheduling & scaling
++- **Machine Learning & AI** — model training, distributed data preprocessing, predictive analytics
++
++Each card has an animated gradient border on hover and a subtle "scan line" sweep effect (CSS keyframe or framer-motion animate).
++
++### 4. Featured Project Highlight
++
++- Interactive project showcase card for **BioPulse HUD & Agar Analytics**.
++- Dynamic tech tags (Python, R, SLURM, Bio-Analytics) as pill badges.
++- Direct GitHub repo link button.
++- Interactive preview box: an animated mock "terminal/HUD" panel (fake scrolling log lines or a simple canvas-based waveform/graph placeholder built from actual SVG/CSS, not an image) that idles with subtle motion to suggest a live dashboard.
++
++### 5. Footer & Contact CTA
++
++- Interactive contact banner: "Open to research collaborations and discussions around ML Infrastructure, HPC, and Scalable AI."
++- One-click copy-email button using the Clipboard API, with a visual confirmation state (icon swap to checkmark + toast/tooltip via `framer-motion`, auto-reverting after ~2s).
++
++---
++
++## Smooth Animation & Motion Principles
++
++Every animation in this build — 3D, DOM, and scroll-driven — must feel fluid and physically grounded, never linear or snappy/jerky. Apply these rules globally:
++
++- **Easing over linear**: never use default linear interpolation for anything user-facing. Use eased curves everywhere — `framer-motion`'s built-in easings (`easeInOut`, custom cubic-bezier arrays like `[0.22, 1, 0.36, 1]` for a smooth "ease-out-expo" feel) for DOM/UI motion, and manual easing functions (`easeOutCubic`, `easeInOutSine`, or damped-spring math) for anything animated inside `useFrame`.
++- **Damped springs over instant snaps**: any value that changes in response to user input (camera position, parallax offset, hover states, mouse-repel particles) should ease toward its target using a spring or exponential-decay lerp (`current += (target - current) * damping`, with a frame-rate-independent damping factor using `delta` from `useFrame`), not jump or animate at a fixed linear rate.
++- **Frame-rate independence**: all `useFrame`-driven motion must scale by `delta` (the time since the last frame), not assume a fixed 60fps — this keeps animation speed consistent across different hardware/refresh rates, which matters since this may run on lower-powered devices per the mobile-degradation requirement above.
++- **Staggered, cascading entrances**: any group of elements appearing together (hero text lines, skills cards, nav links) should animate in with a staggered delay (`framer-motion`'s `staggerChildren`) rather than all at once, for a more choreographed feel.
++- **Scroll-linked animation smoothing**: scroll-driven camera/UI changes (the scroll-linked camera movement, active-nav-link highlighting) should be smoothed/interpolated rather than snapping directly to scroll position — lerp the displayed value toward the scroll-derived target each frame so fast scrolling doesn't cause jarring jumps.
++- **Hover/tap micro-interactions**: buttons, cards, and icon-links should have subtle, quick eased transitions on hover/tap (scale, glow-intensity, border-gradient shift) — around 150–300ms with an ease-out curve — so interactions feel responsive but not abrupt.
++- **No competing/conflicting animations**: ensure state-machine-driven animations (like the camera dolly-zoom `idle → zooming-in → settled`) fully own their target values while active, so they don't fight with the idle parallax/drift animations running in the same frame loop — gate or blend between them explicitly rather than letting both write to the same transform simultaneously.
++
++---
++
++## Code Requirements
++
++- Return full React code starting with standard imports (`import React, { useRef, useState, useMemo, useEffect } from 'react'`, plus all R3F/drei/postprocessing/framer-motion/lucide-react imports).
++- All custom shaders must be complete, valid GLSL strings embedded via drei's `shaderMaterial`, registered with `extend()`.
++- All Three.js geometries/materials must use real, valid `@react-three/fiber` JSX primitives (`<sphereGeometry>`, `<meshStandardMaterial>`, `<instancedMesh>`, etc.) — no invented components.
++- Wrap the whole app in a responsive, mobile-aware layout using Tailwind CSS (verify the 3D canvas gracefully degrades or resizes on small viewports — cap particle/instance counts on narrow screens).
++- Single file, fully self-contained, ready to drop into a Vite/CRA React project with the listed dependencies installed.
+
+# 2026-08-13 11:33:05.981524
++n
+
+# 2026-08-13 11:33:48.602561
++Create a new file called BioComputeGrid.jsx with the following spec: # Bio-Compute Grid — Interactive 3D Portfolio Prompt
++
++Act as an expert Creative Technologist and Senior React / Three.js Developer.
++Generate a COMPLETE, fully functional, interactive 3D portfolio website in a single React component file (using `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing`, `three`, `framer-motion`, `lucide-react`, and `Tailwind CSS`).
++Do NOT leave placeholders, `// TODO` comments, or incomplete sections. Write the entire working code — every geometry, shader, and animation loop fully implemented.
++
++---
++
++## Visual Concept & Theme: "Bio-Compute Grid"
++
++- **Aesthetic**: High-tech dark mode merging High-Performance Computing (HPC) nodes with biological structures (DNA/Bioinformatics).
++- **Color Palette**: Dark Slate/Obsidian background (`#0b0f19`), Electric Cyan (`#00f2fe`), Bio-Green/Emerald (`#10b981`), Cool Metallic accents (`#94a3b8`).
++- **Post-processing stack** (via `@react-three/postprocessing`): `Bloom` (intensity tuned to make the cyan/emerald emissive materials glow), `ChromaticAberration` (subtle, offset-based on camera velocity), `Vignette`, and `Noise` (very low opacity, film-grain feel).
++
++---
++
++## Interactive 3D Scene Features
++
++### 1. Central 3D Model — Animated Double Helix in a Server Ring
++
++- Procedurally generated DNA double helix: two intertwined strands built from instanced spheres or tubes (`<Tube>` / `TubeGeometry` along a sine/cosine parametric curve), with connecting "base pair" rungs as thin cylinders, color-alternating cyan/emerald.
++- The helix continuously rotates on its own axis (`useFrame`) independent of user interaction, with a secondary subtle vertical bob (sine wave on `position.y`).
++- Surrounding "server rack ring": a torus or ring of instanced boxes (`InstancedMesh`) styled as blade-server units, each with emissive edges (`meshStandardMaterial` with `emissive` + `emissiveIntensity` driven by a per-instance offset sine wave, simulating asynchronous "blinking LED" activity).
++- Use custom GLSL shaders (`shaderMaterial` via drei's `shaderMaterial` helper) for at least one surface — e.g., a Fresnel/rim-glow shader on the helix strands, or a scanline/data-flow shader (UV-animated scrolling gradient) on the ring — so the glow isn't just emissive color but an actual custom fragment shader effect.
++
++### 2. Camera & Interaction Choreography
++
++- `OrbitControls` with `enableZoom={false}`, `enablePan={false}`, damped rotation (`enableDamping`, `dampingFactor`), and rotation clamped to a believable range (`minPolarAngle` / `maxPolarAngle`) so the model can't be flipped upside down.
++- Mouse-driven parallax: on top of OrbitControls' drag rotation, the whole scene group subtly offsets/rotates toward normalized mouse position when NOT actively dragging, using `useFrame` + `lerp` for smoothing (three's `MathUtils.lerp`), so it feels alive even without interaction.
++- "Explore Compute Grid" CTA button triggers a scripted camera dolly-zoom: animate `camera.position` and `camera.fov` via `useFrame` + `gsap`-free `framer-motion`-driven state (or a simple lerp-to-target pattern) that pushes the camera in close to the helix core, then pulls back to reveal the full scene as the page auto-scrolls to the About section. Implement this as a real state machine (`idle` → `zooming-in` → `settled`), not a CSS transition.
++- Scroll-linked camera movement: as the user scrolls past Skills/Projects sections, use `useScroll` (drei) or a scroll-progress hook to subtly rotate/reposition the 3D group so it feels tethered to page content, not just a static hero background.
++
++### 3. Floating Particle Field — Cluster Compute Nodes
++
++- Custom `InstancedMesh` or `Points`-based particle system (hundreds of instances) representing compute nodes / molecular data points, distributed in a spherical volume around the central model.
++- Each particle has: individual drift velocity (simple noise-based movement, e.g., a per-particle seed feeding `Math.sin`/`Math.cos` offsets in `useFrame`), slow color interpolation between cyan and emerald (`Color.lerpColors`), and subtle size pulsing.
++- Mouse-repel interaction: particles within a radius of the projected mouse/raycast position gently push away and drift back (spring-like return, e.g. lerp toward home position when not disturbed) — this should use actual raycasting against an invisible plane, not just 2D CSS.
++
++### 4. Dynamic Lighting
++
++- `ambientLight` (low intensity, cool tone), one `directionalLight` acting as key light, and a `pointLight` whose position is updated every frame to track the raycasted cursor position in 3D space, with color cycling subtly between cyan and emerald based on time.
++- Optional: a rim/back `pointLight` fixed behind the helix for silhouette definition.
++
++### 5. Performance & Robustness
++
++- Wrap the Canvas content in `<Suspense fallback={null}>`.
++- Use `dpr={[1, 2]}` and `performance={{ min: 0.5 }}` on the `<Canvas>` for adaptive quality.
++- All `useFrame` callbacks must avoid allocating new objects/vectors per frame (reuse refs/`Vector3` instances) to keep this performant.
++
++---
++
++## User Interface & Content Sections
++
++### 1. Header / Navigation
++
++- Floating glassmorphism navbar (`backdrop-blur`, semi-transparent slate, subtle border-glow) with smooth-scroll links ("About", "Skills", "Projects", "Contact"), active-section highlighting driven by scroll position (`IntersectionObserver`).
++- Interactive theme badge / status indicator: an animated pulsing dot (framer-motion `animate` loop) labeled "System Online" or similar, reinforcing the HPC theme.
++
++### 2. Hero Section
++
++- **Name**: Maneesh B
++- **Headline**: "Machine Learning & High-Performance Computing (HPC) | Computational Biology"
++- **Location**: Kasaragod, Kerala, India | SSSIHL
++- **Interactive Elements**:
++  - "Explore Compute Grid" CTA button that triggers the camera dolly-zoom described above and scrolls to About.
++  - Direct link to GitHub (`https://github.com/maneesh22122005-hub/biopulse-hud-agar-analytics`), styled as an icon-button with hover glow (`lucide-react` GitHub icon).
++- Hero text uses `framer-motion` staggered entrance animation (fade + slide) on mount.
++
++### 3. Interactive Skills Grid (3D Glass Cards)
++
++Hover-responsive glass cards (CSS 3D tilt via `framer-motion`'s `useMotionValue` + `useTransform` tracking mouse position over each card, not just a flat `scale` hover) featuring:
++
++- **Computational Biology & Bioinformatics** — sequence processing, structural analysis, statistical modeling (Python, R)
++- **High-Performance Computing (HPC)** — SLURM workload manager, Linux shell, cluster scheduling & scaling
++- **Machine Learning & AI** — model training, distributed data preprocessing, predictive analytics
++
++Each card has an animated gradient border on hover and a subtle "scan line" sweep effect (CSS keyframe or framer-motion animate).
++
++### 4. Featured Project Highlight
++
++- Interactive project showcase card for **BioPulse HUD & Agar Analytics**.
++- Dynamic tech tags (Python, R, SLURM, Bio-Analytics) as pill badges.
++- Direct GitHub repo link button.
++- Interactive preview box: an animated mock "terminal/HUD" panel (fake scrolling log lines or a simple canvas-based waveform/graph placeholder built from actual SVG/CSS, not an image) that idles with subtle motion to suggest a live dashboard.
++
++### 5. Footer & Contact CTA
++
++- Interactive contact banner: "Open to research collaborations and discussions around ML Infrastructure, HPC, and Scalable AI."
++- One-click copy-email button using the Clipboard API, with a visual confirmation state (icon swap to checkmark + toast/tooltip via `framer-motion`, auto-reverting after ~2s).
++
++---
++
++## Smooth Animation & Motion Principles
++
++Every animation in this build — 3D, DOM, and scroll-driven — must feel fluid and physically grounded, never linear or snappy/jerky. Apply these rules globally:
++
++- **Easing over linear**: never use default linear interpolation for anything user-facing. Use eased curves everywhere — `framer-motion`'s built-in easings (`easeInOut`, custom cubic-bezier arrays like `[0.22, 1, 0.36, 1]` for a smooth "ease-out-expo" feel) for DOM/UI motion, and manual easing functions (`easeOutCubic`, `easeInOutSine`, or damped-spring math) for anything animated inside `useFrame`.
++- **Damped springs over instant snaps**: any value that changes in response to user input (camera position, parallax offset, hover states, mouse-repel particles) should ease toward its target using a spring or exponential-decay lerp (`current += (target - current) * damping`, with a frame-rate-independent damping factor using `delta` from `useFrame`), not jump or animate at a fixed linear rate.
++- **Frame-rate independence**: all `useFrame`-driven motion must scale by `delta` (the time since the last frame), not assume a fixed 60fps — this keeps animation speed consistent across different hardware/refresh rates, which matters since this may run on lower-powered devices per the mobile-degradation requirement above.
++- **Staggered, cascading entrances**: any group of elements appearing together (hero text lines, skills cards, nav links) should animate in with a staggered delay (`framer-motion`'s `staggerChildren`) rather than all at once, for a more choreographed feel.
++- **Scroll-linked animation smoothing**: scroll-driven camera/UI changes (the scroll-linked camera movement, active-nav-link highlighting) should be smoothed/interpolated rather than snapping directly to scroll position — lerp the displayed value toward the scroll-derived target each frame so fast scrolling doesn't cause jarring jumps.
++- **Hover/tap micro-interactions**: buttons, cards, and icon-links should have subtle, quick eased transitions on hover/tap (scale, glow-intensity, border-gradient shift) — around 150–300ms with an ease-out curve — so interactions feel responsive but not abrupt.
++- **No competing/conflicting animations**: ensure state-machine-driven animations (like the camera dolly-zoom `idle → zooming-in → settled`) fully own their target values while active, so they don't fight with the idle parallax/drift animations running in the same frame loop — gate or blend between them explicitly rather than letting both write to the same transform simultaneously.
++
++---
++
++## Code Requirements
++
++- Return full React code starting with standard imports (`import React, { useRef, useState, useMemo, useEffect } from 'react'`, plus all R3F/drei/postprocessing/framer-motion/lucide-react imports).
++- All custom shaders must be complete, valid GLSL strings embedded via drei's `shaderMaterial`, registered with `extend()`.
++- All Three.js geometries/materials must use real, valid `@react-three/fiber` JSX primitives (`<sphereGeometry>`, `<meshStandardMaterial>`, `<instancedMesh>`, etc.) — no invented components.
++- Wrap the whole app in a responsive, mobile-aware layout using Tailwind CSS (verify the 3D canvas gracefully degrades or resizes on small viewports — cap particle/instance counts on narrow screens).
++- Single file, fully self-contained, ready to drop into a Vite/CRA React project with the listed dependencies installed.
+
+# 2026-08-13 11:33:55.359724
++n
+
+# 2026-08-13 12:16:51.963141
++over?
+
+# 2026-08-13 12:26:44.761177
++y
