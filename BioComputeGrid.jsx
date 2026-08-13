@@ -843,7 +843,7 @@ const ProjectHighlight = ({ isReducedMotion }) => {
                   animate={{ opacity: [1, 0, 1] }}
                   transition={{ duration: 1, repeat: Infinity }}
                 >
-                  <span className="text-cyan-400">>_</span>
+                  <span className="text-cyan-400">{'>'}_</span>
                 </motion.div>
               </div>
             </div>
