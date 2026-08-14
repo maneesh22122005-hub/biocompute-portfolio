@@ -19,13 +19,6 @@ import {
   ContactShadows,
   useGLTF,
 } from '@react-three/drei';
-import {
-  EffectComposer,
-  Bloom,
-  ChromaticAberration,
-  Vignette,
-  Noise,
-} from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { motion, animate, useMotionValue, useTransform, useSpring, useScroll as useFramerScroll } from 'framer-motion';
 import {
@@ -169,6 +162,9 @@ const DoubleHelix = ({ radius = 1.5, height = 12, turns = 3, strandRadius = 0.08
       groupRef.current.rotation.y += delta * 0.15;
       groupRef.current.position.y = bobRef.current;
     }
+    if (strandMaterial) {
+      strandMaterial.uTime = timeRef.current;
+    }
   });
 
   const strandGeometry1 = useMemo(
@@ -203,37 +199,38 @@ const DoubleHelix = ({ radius = 1.5, height = 12, turns = 3, strandRadius = 0.08
     []
   );
 
-  // Dispose geometries/materials on unmount to free GPU memory
+  const strandMaterial = useMemo(() => {
+    const mat = new (HelixStrandMaterial as any)();
+    mat.uColorA = new THREE.Color('#00f2fe');
+    mat.uColorB = new THREE.Color('#10b981');
+    mat.uFresnelPower = 2.5;
+    mat.uFresnelIntensity = 1.2;
+    return mat;
+  }, []);
+
   useEffect(() => {
     return () => {
       strandGeometry1.dispose();
       strandGeometry2.dispose();
       rungGeometry.dispose();
       rungMaterials.forEach((m) => m.dispose());
+      strandMaterial.dispose();
     };
-  }, [strandGeometry1, strandGeometry2, rungGeometry, rungMaterials]);
+  }, [strandGeometry1, strandGeometry2, rungGeometry, rungMaterials, strandMaterial]);
 
   return (
     <group ref={groupRef}>
-      <HelixStrandMaterial
-        attach="material"
-        uTime={timeRef.current}
-        uColorA="#00f2fe"
-        uColorB="#10b981"
-        uFresnelPower={2.5}
-        uFresnelIntensity={1.2}
-      />
       {/* Strand 1 */}
       <mesh
         geometry={strandGeometry1}
-        material={HelixStrandMaterial}
+        material={strandMaterial}
         castShadow
         receiveShadow
       />
       {/* Strand 2 */}
       <mesh
         geometry={strandGeometry2}
-        material={HelixStrandMaterial}
+        material={strandMaterial}
         castShadow
         receiveShadow
       />
@@ -566,18 +563,6 @@ const CanvasScene = ({
       <DoubleHelix />
       <ServerRing count={isMobile ? 12 : 24} />
       <ParticleField count={isMobile ? 300 : 800} />
-      {/* Post Processing */}
-      <EffectComposer multisampling={8}>
-        <Bloom
-          intensity={1.2}
-          luminanceThreshold={0.8}
-          luminanceSmoothing={0.025}
-          mipmapBlur={true}
-        />
-        <ChromaticAberration offset={[0.002, 0.002]} />
-        <Vignette eskil={false} offset={0.3} darkness={1.2} />
-        <Noise opacity={0.02} />
-      </EffectComposer>
     </>
   );
 };
