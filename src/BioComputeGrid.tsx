@@ -171,6 +171,48 @@ const DoubleHelix = ({ radius = 1.5, height = 12, turns = 3, strandRadius = 0.08
     }
   });
 
+  const strandGeometry1 = useMemo(
+    () => new THREE.TubeGeometry(helixData.strandCurve1, helixData.strandCurve1.points.length * 2, strandRadius, 8, false),
+    [helixData, strandRadius]
+  );
+  const strandGeometry2 = useMemo(
+    () => new THREE.TubeGeometry(helixData.strandCurve2, helixData.strandCurve2.points.length * 2, strandRadius, 8, false),
+    [helixData, strandRadius]
+  );
+  const rungGeometry = useMemo(
+    () => new THREE.CylinderGeometry(0.02, 0.02, rungLength, 6),
+    [rungLength]
+  );
+  const rungMaterials = useMemo(
+    () => [
+      new THREE.MeshStandardMaterial({
+        color: '#00f2fe',
+        emissive: '#00f2fe',
+        emissiveIntensity: 0.6,
+        transparent: true,
+        opacity: 0.9,
+      }),
+      new THREE.MeshStandardMaterial({
+        color: '#10b981',
+        emissive: '#10b981',
+        emissiveIntensity: 0.6,
+        transparent: true,
+        opacity: 0.9,
+      }),
+    ],
+    []
+  );
+
+  // Dispose geometries/materials on unmount to free GPU memory
+  useEffect(() => {
+    return () => {
+      strandGeometry1.dispose();
+      strandGeometry2.dispose();
+      rungGeometry.dispose();
+      rungMaterials.forEach((m) => m.dispose());
+    };
+  }, [strandGeometry1, strandGeometry2, rungGeometry, rungMaterials]);
+
   return (
     <group ref={groupRef}>
       <HelixStrandMaterial
@@ -183,14 +225,14 @@ const DoubleHelix = ({ radius = 1.5, height = 12, turns = 3, strandRadius = 0.08
       />
       {/* Strand 1 */}
       <mesh
-        geometry={new THREE.TubeGeometry(helixData.strandCurve1, helixData.strandCurve1.points.length * 2, strandRadius, 8, false)}
+        geometry={strandGeometry1}
         material={HelixStrandMaterial}
         castShadow
         receiveShadow
       />
       {/* Strand 2 */}
       <mesh
-        geometry={new THREE.TubeGeometry(helixData.strandCurve2, helixData.strandCurve2.points.length * 2, strandRadius, 8, false)}
+        geometry={strandGeometry2}
         material={HelixStrandMaterial}
         castShadow
         receiveShadow
@@ -199,14 +241,8 @@ const DoubleHelix = ({ radius = 1.5, height = 12, turns = 3, strandRadius = 0.08
       {helixData.rungs.map((rung, i) => (
         <mesh
           key={i}
-          geometry={new THREE.CylinderGeometry(0.02, 0.02, rungLength, 6)}
-          material={new THREE.MeshStandardMaterial({
-            color: i % 2 === 0 ? '#00f2fe' : '#10b981',
-            emissive: i % 2 === 0 ? '#00f2fe' : '#10b981',
-            emissiveIntensity: 0.6,
-            transparent: true,
-            opacity: 0.9,
-          })}
+          geometry={rungGeometry}
+          material={rungMaterials[i % 2]}
           position={[0, rung.y, 0]}
           rotation={[0, rung.angle, Math.PI / 2]}
           castShadow
